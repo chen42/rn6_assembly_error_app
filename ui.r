@@ -4,7 +4,7 @@ ui <- fluidPage(
 		sidebarPanel(
 			width=3,
 			fluidRow(
-				column(3,
+				column(3, offset=0, style='padding:5px;',
 					selectInput("chr", "Chr", 
 						c("chr1"="chr1",
 						"chr2"="chr2", 
@@ -25,25 +25,33 @@ ui <- fluidPage(
 						"chr17"="chr17",
 						"chr18"="chr18",
 						"chr19"="chr19",
-						"chr20"="chr20" ),
+						"chr20"="chr20",
+						"chrX"="chrX",
+						"chrY"="chrY"),
 						selected=c("chr1"),
-						width=80)
+						width=130)
 				),
-				column(4, numericInput("loc", "From, M bp", 80, width=100, step=2 ))
-			)
+				column(3, offset=0, style='padding:5px;', 
+					 numericInput("loc", "M bp", 80, width=120, step=1)
+				)
+			),
+			fluidRow(textInput("geneSymb", "Search by gene symbol, e.g. Gfm2, Ncald", "", width=250)),
+			actionButton("submitButton","submit")
 		),
 		mainPanel(
 			tabsetPanel(
 				tabPanel("Matrix View", 
 					fluidRow( 
-							column(6, offset=0, style='padding:5px;', imageOutput("mvImage1" )), 
-							column(6, offset=0, style='padding:5px;', imageOutput("mvImage2"))
-							),
-					fluidRow(
-							column(6, offset=0, style='padding:5px;', imageOutput("mvImage3")),
-							column(6, offset=0, style='padding:5px;', imageOutput("mvImage4"))
-							)
-					),
+						column(6, offset=0, style='padding:5px;', 
+							imageOutput("mvImage1"), 
+							textOutput("geneList1")
+						),
+						column(6, offset=0, style='padding:5px;', 
+							imageOutput("mvImage2"),
+							textOutput("geneList2")
+						)
+					)
+				),
 				tabPanel("Legend", imageOutput("legendImage")),
 				tabPanel("Method")
 			)
