@@ -13,19 +13,55 @@ server <- function(input, output, session) {
 				mbpStart=floor(gene0$start/1e6)
 			}
 			chr=gene0$chr
+			x1=gene0$start-mbpStart*1e+6
+			x2=gene0$end-mbpStart*1e+6
+#			x1=(x1*1048/5e+5-10)-447.25
+#			x2=(x2*1048/5e+5-10)-447.25
+			x1=(x1*1048/5e+5)+10
+			x2=(x2*1048/5e+5)+10
 		} else {
 			chr=input$chr
 			mbpStart=input$loc
+			x1= -1 
+			x2= -1 
 		}
-		data.frame(chr=chr, start=mbpStart)
+
+		#x1 and x2 are position for the gene (pixel) on the x-axis 
+		data.frame(chr=chr, start=mbpStart, x1, x2)
 	})
 	
 	get_symbs<-function(chr0,start0,end0){
 		inRange=subset(genes, as.character(chr)==as.character(chr0) & ((start >start0 & start <end0 ) | (end > start0 & end < end0))) 
-		#inRange=subset(genes,(start >start0 & start <end0 ) | (end > start0 & end < end0)) 
 		mbp1<-format(start0/1e+6,nsmall=1)
 		mbp2<-format(end0/1e+6,nsmall=1)
-		c("Genes on ", as.character(chr0), "between", mbp1, "-", mbp2, "Mbp:", as.character(inRange[order(inRange$start),"symb"]))
+		c("Genes on ", as.character(chr0), "between", mbp1, "-", mbp2, "Mbp:", as.character(unique(inRange[order(inRange$start),"symb"])))
+	}
+
+	generate_img<-function(chr, start, end, side){
+		imgName=paste("./pngs/sv_",chr,"_", start,"00001-", end,"00000_bn_both.png", sep="")
+		if (side=='left') {
+			try(system(paste("cp", imgName, "leftImg.png")))
+		} else {
+			try(system(paste("cp", imgName, "rightImg.png")))
+		}
+		x1=target()$x1
+		x2=target()$x2
+		## annotate the image with the gene of interest
+		if (x1 >0  & x1 < 1048) {
+			system(paste("convert leftImg.png -gravity west -pointsize 60 -fill steelblue -annotate +", x1, "+0 \"[\"", input$geneSymb, " leftImg.png", sep=""))
+		}
+		if (x2 >0  & x2 < 1048) {
+			system(paste("convert leftImg.png -gravity west -pointsize 60 -fill steelblue -annotate +", x2, "+0 \"]\" leftImg.png", sep=""))
+		}
+		if (x1>1048) {
+			x1<-x1-1048
+			system(paste("convert rightImg.png -gravity west -pointsize 60 -fill steelblue -annotate +", x1, "+0 \"[\"", input$geneSymb, " rightImg.png", sep=""))
+		}
+		if (x2>1048) {
+			x2<-x2-1048
+			system(paste("convert rightImg.png -gravity west -pointsize 60 -fill steelblue -annotate +", x2, "+0 \"]\" rightImg.png", sep=""))
+		}
+	
 	}
 	
 	#first image
@@ -34,11 +70,12 @@ server <- function(input, output, session) {
 		pad0=4-nchar(t0$start)
 		mbpBegin=paste(pad[pad0], t0$start, 0, sep="")
 		mbpMid=paste(pad[pad0], t0$start,5, sep="")
-		imgName=paste("./pngs/sv_",t0$chr,"_", mbpBegin,"00001-", mbpMid,"00000_bn_both.png", sep="")
-		list(src = imgName,
+		#imgName=paste("./pngs/sv_",t0$chr,"_", mbpBegin,"00001-", mbpMid,"00000_bn_both.png", sep="")
+		generate_img(t0$chr, mbpBegin, mbpMid, side="left")
+		list(src = "leftImg.png",
 			contentType = 'image/png',
 			width=450,
-			alt = imgName)
+			alt = "leftImg.png")
 	}, deleteFile = FALSE)
 	# legend for first image		
 	output$geneList1<-renderText({
@@ -47,18 +84,20 @@ server <- function(input, output, session) {
 		bpEnd<-bpStart+5e+5
 		get_symbs(t0$chr,bpStart,bpEnd)
 	})
+
 	# second image
 	output$mvImage2<-renderImage({
 		t0=target()
 		pad0=4-nchar(t0$start)
 		mbpMid=paste(pad[pad0], t0$start,5, sep="")
 		mbpEnd=paste(pad[pad0], t0$start+1, 0, sep="")
-		imgName=paste("./pngs/sv_",t0$chr,"_", mbpMid,"00001-", mbpEnd, "00000_bn_both.png", sep="")
-		list(src = imgName,
+#		imgName=paste("./pngs/sv_",t0$chr,"_", mbpMid,"00001-", mbpEnd, "00000_bn_both.png", sep="")
+		generate_img(t0$chr, mbpMid, mbpEnd, side="right")
+		list(src = "rightImg.png",
 			contentType = 'image/png',
 			width=450,
-			alt = imgName)
-	}, deleteFile = FALSE)
+			alt = "rightImg.png")
+	}, deleteFile = TRUE)
 	# legend for second image
 	output$geneList2<-renderText({
 		t0<-target()
@@ -70,7 +109,7 @@ server <- function(input, output, session) {
 	observe({
 		updateSelectInput(session, "chr", selected=target()$chr)
 		updateNumericInput(session, "loc", label="M bp", value=target()$start)
-		updateTextInput(session, "geneSymb", value="")
+		#updateTextInput(session, "geneSymb", value="") #if enabled, cleans the symb in the figure
 	})
 	## legend panel
 	output$legendImage <- renderImage({

@@ -35,7 +35,7 @@ ui <- fluidPage(
 					 numericInput("loc", "M bp", 80, width=120, step=1)
 				)
 			),
-			fluidRow(textInput("geneSymb", "Search by gene symbol, e.g. Gfm2, Ncald", "", width=250)),
+			fluidRow(textInput("geneSymb", "Search by gene symbol, e.g. Ube3a, Ncald", "", width=250)),
 			actionButton("submitButton","submit")
 		),
 		mainPanel(
