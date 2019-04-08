@@ -6,8 +6,9 @@ pad=c("","0","00")
 server <- function(input, output, session) {
 
 	target<-eventReactive(input$submitButton, {
-		if (nchar(input$geneSymb)>1){
-			idx<-toupper(input$geneSymb) == toupper(genes$symb)
+		inputsymb=gsub(" ", "",input$geneSymb)
+		if (nchar(inputsymb)>1){
+			idx<-toupper(inputsymb) == toupper(genes$symb)
 			if (sum(idx)==1){
 				gene0=genes[idx,]
 				mbpStart=floor(gene0$start/1e6)
@@ -35,7 +36,7 @@ server <- function(input, output, session) {
 		}
 
 		#x1 and x2 are position for the gene (pixel) on the x-axis 
-		data.frame(chr=chr, start=mbpStart, x1=x1, x2=x2, symb=input$geneSymb)
+		data.frame(chr=chr, start=mbpStart, x1=x1, x2=x2, symb=inputsymb)
 	})
 	
 	get_symbs<-function(chr0,start0,end0, legend0){
@@ -43,7 +44,7 @@ server <- function(input, output, session) {
 		mbp1<-format(start0/1e+6,nsmall=1)
 		mbp2<-format(end0/1e+6,nsmall=1)
 		symbs<- as.character(unique(inRange[order(inRange$start),"symb"]))
-		textout<-c("Genes on ", as.character(chr0), "between", mbp1, "-", mbp2, "Mbp:", symbs)
+		textout<-c("Genes on ", as.character(chr0), "between", mbp1, "–", mbp2, "Mbp:", symbs) #, target()$x2)
 		if (legend0==TRUE){
 			textout<-c("The location of", as.character(target()$symb), "is indicated using blue brackets. ", textout)
 		}
@@ -52,8 +53,14 @@ server <- function(input, output, session) {
 		} else if(target()$x1== -20){
 			textout<-c("Your search" , as.character(target()$symb), "has multiple hits. Please specify chromosomal location instead. ", textout)
 		}
-	
 		textout
+	}
+
+	adjX<-function(x){
+		if (x < 140) {
+			x = 140 # minimal x for annotate with point size =100 
+		}
+		x
 	}
 
 	generate_img<-function(chr, start, end, side){
@@ -65,19 +72,23 @@ server <- function(input, output, session) {
 		}
 		x1=target()$x1
 		x2=target()$x2
-		## annotate the image with the gene of interest
-		if (x1 >0  & x1 < 1048) {
+		## annotate the image with the gene of interest, 1048 is the width of the image
+		if (x1 > 0  & x1 < 1048) {
+			x1<-adjX(x1)
 			system(paste("convert leftImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x1, "+0 \"[\" leftImg.png", sep=""))
 		}
-		if (x2 >0  & x2 < 1048) {
+		if (x2 > 0  & x2 < 1048) {
+			x2<-adjX(x2)
 			system(paste("convert leftImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x2, "+0 \"]\" leftImg.png", sep=""))
 		}
-		if (x1>1048) {
-			x1<-x1-1048
+		if (x1 > 1048) {
+			x1 <- x1-1048
+			x1 <- adjX(x1)
 			system(paste("convert rightImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x1, "+0 \"[\" rightImg.png", sep=""))
 		}
-		if (x2>1048) {
-			x2<-x2-1048
+		if (x2 > 1048) {
+			x2 <- x2-1048
+			x2 <- adjX(x2)
 			system(paste("convert rightImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x2, "+0 \"]\" rightImg.png", sep=""))
 		}
 	

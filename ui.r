@@ -33,13 +33,13 @@ ui <- fluidPage(
 						width=130)
 				),
 				column(5, #offset=0, style='padding:0px;', 
-					numericInput("loc", "", 80, width=80, step=1)
+					numericInput("loc", "", 80, width=80, min=0, max=283,step=1)
 				)
 			),
 #			actionButton("positionButton","Search"),
 			hr(),
 			fluidRow(
-				strong("Search by gene symbol, e.g. Ube3a, Ncald"),
+				strong("Search by gene symbol, e.g. Ube3a, Ncald, Exoc6b"),
 				column(12, 
 				textInput("geneSymb", "", "", width=250)
 				)
