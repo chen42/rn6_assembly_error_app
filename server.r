@@ -11,12 +11,22 @@ server <- function(input, output, session) {
 			if (sum(idx)==1){
 				gene0=genes[idx,]
 				mbpStart=floor(gene0$start/1e6)
+				chr=gene0$chr
+				x1=gene0$start-mbpStart*1e+6
+				x2=gene0$end-mbpStart*1e+6
+				x1=(x1*1048/5e+5)+10
+				x2=(x2*1048/5e+5)+10
+			} else if (sum(idx)>1){
+				chr="chr1"
+				mbpStart=1
+				x1=-20
+				x2=-20
+			} else {
+				chr="chr1"
+				mbpStart=1
+				x1=-10
+				x2=-10
 			}
-			chr=gene0$chr
-			x1=gene0$start-mbpStart*1e+6
-			x2=gene0$end-mbpStart*1e+6
-			x1=(x1*1048/5e+5)+10
-			x2=(x2*1048/5e+5)+10
 		} else {
 			chr=input$chr
 			mbpStart=input$loc
@@ -37,6 +47,12 @@ server <- function(input, output, session) {
 		if (legend0==TRUE){
 			textout<-c("The location of", as.character(target()$symb), "is indicated using blue brackets. ", textout)
 		}
+		if (target()$x1== -10){
+			textout<-c("Your search" , as.character(target()$symb), "is not found. ", textout)
+		} else if(target()$x1== -20){
+			textout<-c("Your search" , as.character(target()$symb), "has multiple hits. Please specify chromosomal location instead. ", textout)
+		}
+	
 		textout
 	}
 
