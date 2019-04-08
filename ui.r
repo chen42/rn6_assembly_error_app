@@ -4,8 +4,9 @@ ui <- fluidPage(
 		sidebarPanel(
 			width=3,
 			fluidRow(
-				column(3, offset=0, style='padding:5px;',
-					selectInput("chr", "Chr", 
+				strong("Search by chromosomal position, M Bp"),
+				column(5, #offset=0, style='padding:0px;',
+					selectInput("chr", "", 
 						c("chr1"="chr1",
 						"chr2"="chr2", 
 						"chr3"="chr3", 
@@ -31,12 +32,19 @@ ui <- fluidPage(
 						selected=c("chr1"),
 						width=130)
 				),
-				column(3, offset=0, style='padding:5px;', 
-					 numericInput("loc", "M bp", 80, width=120, step=1)
+				column(5, #offset=0, style='padding:0px;', 
+					numericInput("loc", "", 80, width=80, step=1)
 				)
 			),
-			fluidRow(textInput("geneSymb", "Search by gene symbol, e.g. Ube3a, Ncald", "", width=250)),
-			actionButton("submitButton","submit")
+#			actionButton("positionButton","Search"),
+			hr(),
+			fluidRow(
+				strong("Search by gene symbol, e.g. Ube3a, Ncald"),
+				column(12, 
+				textInput("geneSymb", "", "", width=250)
+				)
+			),
+			actionButton("submitButton","Search")
 		),
 		mainPanel(
 			tabsetPanel(
