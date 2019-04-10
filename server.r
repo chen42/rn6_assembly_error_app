@@ -4,7 +4,6 @@ genes<-read.table(file="./rn6_gene_pos_symb.tab",sep="\t", header=T)
 pad=c("","0","00")
 
 server <- function(input, output, session) {
-
 	target<-eventReactive(input$submitButton, {
 		inputsymb=gsub(" ", "",input$geneSymb)
 		if (nchar(inputsymb)>1){
@@ -15,8 +14,8 @@ server <- function(input, output, session) {
 				chr=gene0$chr
 				x1=gene0$start-mbpStart*1e+6
 				x2=gene0$end-mbpStart*1e+6
-				x1=(x1*1048/5e+5)+10
-				x2=(x2*1048/5e+5)+10
+				x1=(x1*1048/5e+5)+25
+				x2=(x2*1048/5e+5)+25
 			} else if (sum(idx)>1){
 				chr="chr1"
 				mbpStart=1
@@ -31,8 +30,16 @@ server <- function(input, output, session) {
 		} else {
 			chr=input$chr
 			mbpStart=input$loc
-			x1= -1 
-			x2= -1 
+			if (floor(mbpStart) != mbpStart) { 
+				bpStart=mbpStart*1e+6
+				x1=bpStart-floor(mbpStart)*1e+6
+				x1=(x1*1048/5e+5)+25
+				x2=x1
+				mbpStart=floor(mbpStart)
+			} else {
+				x1= -1 
+				x2= -1 
+			}
 		}
 
 		#x1 and x2 are position for the gene (pixel) on the x-axis 
@@ -44,7 +51,7 @@ server <- function(input, output, session) {
 		mbp1<-format(start0/1e+6,nsmall=1)
 		mbp2<-format(end0/1e+6,nsmall=1)
 		symbs<- as.character(unique(inRange[order(inRange$start),"symb"]))
-		textout<-c("Genes on ", as.character(chr0), "between", mbp1, "–", mbp2, "Mbp:", symbs) #, target()$x2)
+		textout<-c("Genes on ", as.character(chr0), "between", mbp1, "–", mbp2, "Mbp:", symbs, target()$x2)
 		if (legend0==TRUE){
 			textout<-c("The location of", as.character(target()$symb), "is indicated using blue brackets. ", textout)
 		}
@@ -55,12 +62,9 @@ server <- function(input, output, session) {
 		}
 		textout
 	}
-
 	adjX<-function(x){
-		if (x < 140) {
-			x = 140 # minimal x for annotate with point size =100 
-		}
-		x
+		#for second image
+		x=x+120
 	}
 
 	generate_img<-function(chr, start, end, side){
@@ -91,7 +95,6 @@ server <- function(input, output, session) {
 			x2 <- adjX(x2)
 			system(paste("convert rightImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x2, "+0 \"]\" rightImg.png", sep=""))
 		}
-	
 	}
 	
 	#first image
@@ -106,6 +109,7 @@ server <- function(input, output, session) {
 			width=450,
 			alt = "leftImg.png")
 	}, deleteFile = FALSE)
+
 	# legend for first image		
 	output$geneList1<-renderText({
 		t0<-target()
@@ -128,6 +132,7 @@ server <- function(input, output, session) {
 			width=450,
 			alt = "rightImg.png")
 	}, deleteFile = TRUE)
+
 	# legend for second image
 	output$geneList2<-renderText({
 		t0<-target()
@@ -136,11 +141,14 @@ server <- function(input, output, session) {
 		showLegend<-t0$x1>1024 | t0$x2>1048
 		get_symbs(t0$chr,bpStart,bpEnd, showLegend)
 	})
+
 	# set the default chr, Mbp to the location of the searched gene, clear input field 
 	observe({
 		updateSelectInput(session, "chr", selected=target()$chr)
 		updateNumericInput(session, "loc", value=target()$start)
-		updateTextInput(session, "geneSymb", value="")	})
+		updateTextInput(session, "geneSymb", value="")	
+	})
+
 	## legend panel
 	output$legendImage <- renderImage({
 		imgName="rotated_matrix_view.png"
@@ -149,5 +157,4 @@ server <- function(input, output, session) {
 			width=550,
 			alt = imgName)
 	},deleteFile = FALSE)
-
 }

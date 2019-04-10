@@ -1,3 +1,5 @@
+allSymb=read.csv(file="./rn6_gene_pos_symb.tab", sep="\t")[,"symb"]
+
 ui <- fluidPage(
 	titlePanel("Potential assembly errors in rn6"),
 	sidebarLayout(
@@ -36,12 +38,12 @@ ui <- fluidPage(
 					numericInput("loc", "", 80, width=80, min=0, max=283,step=1)
 				)
 			),
-#			actionButton("positionButton","Search"),
 			hr(),
 			fluidRow(
 				strong("Search by gene symbol, e.g. Ube3a, Ncald, Exoc6b"),
 				column(12, 
-				textInput("geneSymb", "", "", width=250)
+					textInput("geneSymb", "", "", width=250)
+					#selectInput(inputId="geneSymb", label="", choices=allSymb, selected="", multiple=FALSE, selectize=TRUE)
 				)
 			),
 			actionButton("submitButton","Search")
