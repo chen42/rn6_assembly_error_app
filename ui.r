@@ -6,7 +6,7 @@ ui <- fluidPage(
 		sidebarPanel(
 			width=3,
 			fluidRow(
-				strong("Search by chromosomal position, M Bp"),
+				strong("Search by chromosomal position, M bp"),
 				column(5, #offset=0, style='padding:0px;',
 					selectInput("chr", "", 
 						c("chr1"="chr1",
@@ -31,11 +31,11 @@ ui <- fluidPage(
 						"chr20"="chr20",
 						"chrX"="chrX",
 						"chrY"="chrY"),
-						selected=c("chr1"),
+						selected=c("chr12"),
 						width=130)
 				),
 				column(5, #offset=0, style='padding:0px;', 
-					numericInput("loc", "", 80, width=80, min=0, max=283,step=1)
+					numericInput("loc", "", 8.4, width=80, min=0, max=283,step=1)
 				)
 			),
 			hr(),
@@ -43,9 +43,15 @@ ui <- fluidPage(
 				strong("Search by gene symbol, e.g. Ube3a, Ncald, Exoc6b"),
 				column(12, 
 					textInput("geneSymb", "", "", width=250)
-					#selectInput(inputId="geneSymb", label="", choices=allSymb, selected="", multiple=FALSE, selectize=TRUE)
 				)
 			),
+			fluidRow(
+				strong("Image size"),
+				column(12, 
+					sliderInput("imgSize", "", min=400, max=500,value=450)
+				)
+			),
+	
 			actionButton("submitButton","Search")
 		),
 		mainPanel(
@@ -54,10 +60,16 @@ ui <- fluidPage(
 					fluidRow( 
 						column(6, offset=0, style='padding:5px;', 
 							imageOutput("mvImage1"), 
+							br(),
+							br(),
+							br(),
 							textOutput("geneList1")
 						),
 						column(6, offset=0, style='padding:5px;', 
 							imageOutput("mvImage2"),
+							br(),
+							br(),
+							br(),
 							textOutput("geneList2")
 						)
 					)

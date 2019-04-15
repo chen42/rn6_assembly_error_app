@@ -1,7 +1,7 @@
 library("shiny")
 
 genes<-read.table(file="./rn6_gene_pos_symb.tab",sep="\t", header=T)
-pad=c("","0","00")
+pad=c("00","000","0000")
 
 server <- function(input, output, session) {
 	target<-eventReactive(input$submitButton, {
@@ -14,14 +14,17 @@ server <- function(input, output, session) {
 				chr=gene0$chr
 				x1=gene0$start-mbpStart*1e+6
 				x2=gene0$end-mbpStart*1e+6
-				x1=(x1*1048/5e+5)+25
-				x2=(x2*1048/5e+5)+25
+				x1=(x1*1052/5e+5)-10
+				x2=(x2*1052/5e+5)-10
 			} else if (sum(idx)>1){
+				# multiple hits
 				chr="chr1"
 				mbpStart=1
+				## steal x1/x2 as the error code
 				x1=-20
 				x2=-20
 			} else {
+				# no hits
 				chr="chr1"
 				mbpStart=1
 				x1=-10
@@ -33,9 +36,10 @@ server <- function(input, output, session) {
 			if (floor(mbpStart) != mbpStart) { 
 				bpStart=mbpStart*1e+6
 				x1=bpStart-floor(mbpStart)*1e+6
-				x1=(x1*1048/5e+5)+25
+				x1=(x1*1052/5e+5)-10
 				x2=x1
 				mbpStart=floor(mbpStart)
+				inputsymb=paste(input$loc, "M bp")
 			} else {
 				x1= -1 
 				x2= -1 
@@ -51,7 +55,7 @@ server <- function(input, output, session) {
 		mbp1<-format(start0/1e+6,nsmall=1)
 		mbp2<-format(end0/1e+6,nsmall=1)
 		symbs<- as.character(unique(inRange[order(inRange$start),"symb"]))
-		textout<-c("Genes on ", as.character(chr0), "between", mbp1, "–", mbp2, "Mbp:", symbs, target()$x2)
+		textout<-c("Genes on ", as.character(chr0), "between", mbp1, "–", mbp2, "Mbp:", symbs) #, "x1=", target()$x1, "x2=", target()$x2)
 		if (legend0==TRUE){
 			textout<-c("The location of", as.character(target()$symb), "is indicated using blue brackets. ", textout)
 		}
@@ -62,13 +66,9 @@ server <- function(input, output, session) {
 		}
 		textout
 	}
-	adjX<-function(x){
-		#for second image
-		x=x+120
-	}
 
 	generate_img<-function(chr, start, end, side){
-		imgName=paste("./pngs/sv_",chr,"_", start,"00001-", end,"00000_bn_both.png", sep="")
+		imgName=paste("./pngs/",chr,"_", start,"00001-", end,"00000_bn_multi_combined.png", sep="")
 		if (side=='left') {
 			try(system(paste("cp", imgName, "leftImg.png")))
 		} else {
@@ -76,24 +76,21 @@ server <- function(input, output, session) {
 		}
 		x1=target()$x1
 		x2=target()$x2
-		## annotate the image with the gene of interest, 1048 is the width of the image
-		if (x1 > 0  & x1 < 1048) {
-			x1<-adjX(x1)
-			system(paste("convert leftImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x1, "+0 \"[\" leftImg.png", sep=""))
+		## annotate the image with the gene of interest, 1052 is the width of the image
+		if (x1 > 0  & x1 < 1052) {
+			system(paste("convert leftImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" leftImg.png", sep=""))
 		}
-		if (x2 > 0  & x2 < 1048) {
-			x2<-adjX(x2)
-			system(paste("convert leftImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x2, "+0 \"]\" leftImg.png", sep=""))
+		if (x2 > 0  & x2 < 1052) {
+			system(paste("convert leftImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" leftImg.png", sep=""))
 		}
-		if (x1 > 1048) {
-			x1 <- x1-1048
-			x1 <- adjX(x1)
-			system(paste("convert rightImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x1, "+0 \"[\" rightImg.png", sep=""))
+
+		if (x1 > 1052) {
+			x1 <- x1-1052
+			system(paste("convert rightImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" rightImg.png", sep=""))
 		}
-		if (x2 > 1048) {
-			x2 <- x2-1048
-			x2 <- adjX(x2)
-			system(paste("convert rightImg.png -gravity west -pointsize 100 -fill royalblue2 -annotate +", x2, "+0 \"]\" rightImg.png", sep=""))
+		if (x2 > 1052) {
+			x2 <- x2-1052
+			system(paste("convert rightImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" rightImg.png", sep=""))
 		}
 	}
 	
@@ -106,9 +103,9 @@ server <- function(input, output, session) {
 		generate_img(t0$chr, mbpBegin, mbpMid, side="left")
 		list(src = "leftImg.png",
 			contentType = 'image/png',
-			width=450,
+			width=input$imgSize,
 			alt = "leftImg.png")
-	}, deleteFile = FALSE)
+	}, deleteFile = TRUE)
 
 	# legend for first image		
 	output$geneList1<-renderText({
@@ -125,11 +122,10 @@ server <- function(input, output, session) {
 		pad0=4-nchar(t0$start)
 		mbpMid=paste(pad[pad0], t0$start,5, sep="")
 		mbpEnd=paste(pad[pad0], t0$start+1, 0, sep="")
-		imgName=paste("./pngs/sv_",t0$chr,"_", mbpMid,"00001-", mbpEnd, "00000_bn_both.png", sep="")
 		generate_img(t0$chr, mbpMid, mbpEnd, side="right")
 		list(src = "rightImg.png",
 			contentType = 'image/png',
-			width=450,
+			width=input$imgSize,
 			alt = "rightImg.png")
 	}, deleteFile = TRUE)
 
