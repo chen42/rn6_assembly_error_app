@@ -1,9 +1,19 @@
 library("shiny")
+library("ggplot2")
 
 genes<-read.table(file="./rn6_gene_pos_symb.tab",sep="\t", header=T)
 pad=c("00","000","0000")
 
+# data for SVs from inbreds
+svs<-read.table(file="svs.tab", sep="\t")
+names(svs)<-c("SV_Type","sv_chr","sv_start","call", "sv_end","qual")
+svs$sv_start<-svs$sv_start/1e6
+svs$sv_end<-svs$sv_end/1e6
+head(svs)
+dim(svs)
+
 server <- function(input, output, session) {
+	# get the target region, include chr, star location, gene symb.
 	target<-eventReactive(input$submitButton, {
 		inputsymb=gsub(" ", "",input$geneSymb)
 		if (nchar(inputsymb)>1){
@@ -45,11 +55,10 @@ server <- function(input, output, session) {
 				x2= -1 
 			}
 		}
-
-		#x1 and x2 are position for the gene (pixel) on the x-axis 
+		#x1 and x2 are position for the gene (pixel) on the x-axis, it is also used as error code 
 		data.frame(chr=chr, start=mbpStart, x1=x1, x2=x2, symb=inputsymb)
 	})
-	
+	# get the genes found in the region	
 	get_symbs<-function(chr0,start0,end0, legend0){
 		inRange=subset(genes, as.character(chr)==as.character(chr0) & ((start >start0 & start <end0 ) | (end > start0 & end < end0))) 
 		mbp1<-format(start0/1e+6,nsmall=1)
@@ -66,44 +75,79 @@ server <- function(input, output, session) {
 		}
 		textout
 	}
-
-	generate_img<-function(chr, start, end, side){
-		imgName=paste("./pngs/",chr,"_", start,"00001-", end,"00000_bn_multi_combined.png", sep="")
+	# generate the images
+	leftImg=tempfile(fileext=".png")		
+	rightImg=tempfile(fileext=".png")		
+	generate_img<-function(side){
+		t0=target()
+		chr=t0$chr
+		x1=t0$x1
+		x2=t0$x2
 		if (side=='left') {
-			try(system(paste("cp", imgName, "leftImg.png")))
+			mbpstart=t0$start
+			mbpend=t0$start+0.5
+			loc1=paste(pad[4-nchar(t0$start)], t0$start,0, sep="")
+			loc2=paste(pad[4-nchar(t0$start)], t0$start,5, sep="")
+			imgName=paste("./pngs/",chr,"_", loc1,"00001-", loc2,"00000_bn_multi_combined.png", sep="")
+			try(system(paste("cp", imgName, leftImg)))
 		} else {
-			try(system(paste("cp", imgName, "rightImg.png")))
+			mbpstart=t0$start+0.5
+			mbpend=t0$start+1
+			loc1=paste(pad[4-nchar(t0$start)], t0$start,5, sep="")
+			loc2=paste(pad[4-nchar(t0$start+1)], t0$start+1,0, sep="")
+			imgName=paste("./pngs/",chr,"_", loc1,"00001-", loc2,"00000_bn_multi_combined.png", sep="")
+			try(system(paste("cp", imgName, rightImg)))
 		}
-		x1=target()$x1
-		x2=target()$x2
-		## annotate the image with the gene of interest, 1052 is the width of the image
-		if (x1 > 0  & x1 < 1052) {
-			system(paste("convert leftImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" leftImg.png", sep=""))
+		## SV track for first image
+		y_sv=1
+		svtrack=tempfile(fileext='.png')
+		svsdf<- subset(svs, as.character(sv_chr)==as.character(chr) & ((sv_end > mbpstart & sv_end < mbpend) | (sv_start>mbpstart & sv_start<mbpend))) 
+		if (dim(svsdf)[1]==0){
+			# avoid the error message 
+			svsdf<-data.frame(SV_Type="del",sv_chr="chr",sv_start=0.1, sv_end=0.1, pass="PASS")
 		}
-		if (x2 > 0  & x2 < 1052) {
-			system(paste("convert leftImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" leftImg.png", sep=""))
-		}
+		png(file=svtrack,width=1052,height=250)
+	p<-ggplot(data=svsdf, aes(x=sv_start, xend=sv_end, y=y_sv, yend=y_sv, color=SV_Type))+
+	geom_segment(size=30) + 
+	scale_color_manual(values=c("DUP"="#4283f430", "INV"="#f2360330","DEL"="#1c1c1c30"))+ 
+	ylim(.999,1.001)+
+	ylab("")+
+	xlim(mbpstart, mbpend)+
+	xlab("Mb")+
+	theme_bw()+ 
+	theme(legend.position="bottom", text=element_text(size=30), panel.grid.minor=element_blank(), panel.grid.major=element_blank())+
+	theme(plot.margin=margin(0,-52,0,-150)) #(top, right, bottom, left)
+		print(p)
+		dev.off()
 
+		## annotate the image with the gene of interest, 1052 is the width of the image
+		if (x1 > 0 & x1 < 1052) {
+			system(paste("convert ",  leftImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  leftImg, sep=""))
+		}
+		if (x2 > 0 & x2 < 1052) {
+			system(paste("convert ", leftImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" ",  leftImg, sep=""))
+		}
 		if (x1 > 1052) {
 			x1 <- x1-1052
-			system(paste("convert rightImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" rightImg.png", sep=""))
+			system(paste("convert ", rightImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  rightImg, sep=""))
 		}
 		if (x2 > 1052) {
 			x2 <- x2-1052
-			system(paste("convert rightImg.png +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" rightImg.png", sep=""))
+			system(paste("convert ", rightImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" ", rightImg, sep=""))
+		}
+		# append the svtrack
+		if (side=='left') {
+			system(paste("convert", leftImg, svtrack, " -append", leftImg, sep=" "))
+		} else {
+			system(paste("convert", rightImg, svtrack, " -append", rightImg, sep=" "))
 		}
 	}
 	
 	#first image
 	output$mvImage1<-renderImage({
-		t0=target()
-		pad0=4-nchar(t0$start)
-		mbpBegin=paste(pad[pad0], t0$start, 0, sep="")
-		mbpMid=paste(pad[pad0], t0$start,5, sep="")
-		generate_img(t0$chr, mbpBegin, mbpMid, side="left")
-		list(src = "leftImg.png",
+		generate_img(side="left")
+		list(src = leftImg,
 			contentType = 'image/png',
-			width=input$imgSize,
 			alt = "leftImg.png")
 	}, deleteFile = TRUE)
 
@@ -118,14 +162,9 @@ server <- function(input, output, session) {
 
 	# second image
 	output$mvImage2<-renderImage({
-		t0=target()
-		pad0=4-nchar(t0$start)
-		mbpMid=paste(pad[pad0], t0$start,5, sep="")
-		mbpEnd=paste(pad[pad0], t0$start+1, 0, sep="")
-		generate_img(t0$chr, mbpMid, mbpEnd, side="right")
-		list(src = "rightImg.png",
+		generate_img(side="right")
+		list(src = rightImg,
 			contentType = 'image/png',
-			width=input$imgSize,
 			alt = "rightImg.png")
 	}, deleteFile = TRUE)
 

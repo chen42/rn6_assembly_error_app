@@ -1,12 +1,19 @@
-allSymb=read.csv(file="./rn6_gene_pos_symb.tab", sep="\t")[,"symb"]
+#allSymb=read.csv(file="./rn6_gene_pos_symb.tab", sep="\t")[,"symb"]
 
 ui <- fluidPage(
 	titlePanel("Potential assembly errors in rn6"),
+	tags$head(tags$style( type="text/css", 
+						 "#mvImage1 img {max-width:100%; width:100%; height:auto}
+						  #mvImage2 img {max-width:100%; width:100%; height:auto} 
+						  #svsImage1 img {max-width:100%; width:100%; height:auto} 
+						  #svsImage2 img {max-width:100%; width:100%; height:auto} 
+						 ")), 
+	#tags$head( tags$link(rel="stylesheet", type="text/css", href="rn6_err.css")),
 	sidebarLayout(
 		sidebarPanel(
 			width=3,
 			fluidRow(
-				strong("Search by chromosomal position, M bp"),
+				strong("Search by Chr location, M bp"),
 				column(5, #offset=0, style='padding:0px;',
 					selectInput("chr", "", 
 						c("chr1"="chr1",
@@ -38,39 +45,35 @@ ui <- fluidPage(
 					numericInput("loc", "", 8.4, width=80, min=0, max=283,step=1)
 				)
 			),
-			hr(),
 			fluidRow(
 				strong("Search by gene symbol, e.g. Ube3a, Ncald, Exoc6b"),
 				column(12, 
 					textInput("geneSymb", "", "", width=250)
 				)
 			),
-			fluidRow(
-				strong("Image size"),
-				column(12, 
-					sliderInput("imgSize", "", min=400, max=500,value=450)
-				)
-			),
+#			fluidRow( strong("Image size"), column(12, sliderInput("imgSize", "", min=200, max=500,value=450))),
 	
 			actionButton("submitButton","Search")
 		),
 		mainPanel(
 			tabsetPanel(
 				tabPanel("Matrix View", 
-					fluidRow( 
+					fluidRow(
 						column(6, offset=0, style='padding:5px;', 
-							imageOutput("mvImage1"), 
-							br(),
-							br(),
-							br(),
 							textOutput("geneList1")
 						),
 						column(6, offset=0, style='padding:5px;', 
-							imageOutput("mvImage2"),
-							br(),
-							br(),
-							br(),
 							textOutput("geneList2")
+						)
+					),
+					fluidRow( 
+						column(6, offset=0, style='padding:5px;', 
+							imageOutput("mvImage1")
+#							textOutput("geneList1")
+						),
+						column(6, offset=0, style='padding:5px;', 
+							imageOutput("mvImage2") 
+#							textOutput("geneList2")
 						)
 					)
 				),
