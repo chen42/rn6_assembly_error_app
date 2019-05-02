@@ -9,8 +9,6 @@ svs<-read.table(file="svs.tab", sep="\t")
 names(svs)<-c("SV_Type","sv_chr","sv_start","call", "sv_end","qual")
 svs$sv_start<-svs$sv_start/1e6
 svs$sv_end<-svs$sv_end/1e6
-head(svs)
-dim(svs)
 
 server <- function(input, output, session) {
 	# get the target region, include chr, star location, gene symb.
@@ -76,8 +74,8 @@ server <- function(input, output, session) {
 		textout
 	}
 	# generate the images
-	leftImg=tempfile(fileext=".png")		
-	rightImg=tempfile(fileext=".png")		
+	leftImg=tempfile(fileext=".png")
+	rightImg=tempfile(fileext=".png")
 	generate_img<-function(side){
 		t0=target()
 		chr=t0$chr
@@ -107,19 +105,18 @@ server <- function(input, output, session) {
 			svsdf<-data.frame(SV_Type="del",sv_chr="chr",sv_start=0.1, sv_end=0.1, pass="PASS")
 		}
 		png(file=svtrack,width=1052,height=250)
-	p<-ggplot(data=svsdf, aes(x=sv_start, xend=sv_end, y=y_sv, yend=y_sv, color=SV_Type))+
-	geom_segment(size=30) + 
-	scale_color_manual(values=c("DUP"="#4283f430", "INV"="#f2360330","DEL"="#1c1c1c30"))+ 
-	ylim(.999,1.001)+
-	ylab("")+
-	xlim(mbpstart, mbpend)+
-	xlab("Mb")+
-	theme_bw()+ 
-	theme(legend.position="bottom", text=element_text(size=30), panel.grid.minor=element_blank(), panel.grid.major=element_blank())+
-	theme(plot.margin=margin(0,-52,0,-150)) #(top, right, bottom, left)
+		p<-ggplot(data=svsdf, aes(x=sv_start, xend=sv_end, y=y_sv, yend=y_sv, color=SV_Type))+
+		geom_segment(size=30) + 
+		scale_color_manual(values=c("DUP"="#4283f430", "INV"="#f2360330","DEL"="#1c1c1c30"))+ 
+		ylim(.999,1.001)+
+		ylab("")+
+		xlim(mbpstart, mbpend)+
+		xlab("Mb")+
+		theme_bw()+ 
+		theme(legend.position="bottom", text=element_text(size=30), panel.grid.minor=element_blank(), panel.grid.major=element_blank())+
+		theme(plot.margin=margin(0,-52,0,-150)) #(top, right, bottom, left)
 		print(p)
 		dev.off()
-
 		## annotate the image with the gene of interest, 1052 is the width of the image
 		if (x1 > 0 & x1 < 1052) {
 			system(paste("convert ",  leftImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  leftImg, sep=""))
@@ -150,7 +147,6 @@ server <- function(input, output, session) {
 			contentType = 'image/png',
 			alt = "leftImg.png")
 	}, deleteFile = TRUE)
-
 	# legend for first image		
 	output$geneList1<-renderText({
 		t0<-target()
@@ -159,7 +155,6 @@ server <- function(input, output, session) {
 		showLegend<-t0$x1>0 & t0$x1<1048
 		get_symbs(t0$chr,bpStart,bpEnd, showLegend)
 	})
-
 	# second image
 	output$mvImage2<-renderImage({
 		generate_img(side="right")
@@ -167,7 +162,6 @@ server <- function(input, output, session) {
 			contentType = 'image/png',
 			alt = "rightImg.png")
 	}, deleteFile = TRUE)
-
 	# legend for second image
 	output$geneList2<-renderText({
 		t0<-target()
@@ -176,14 +170,12 @@ server <- function(input, output, session) {
 		showLegend<-t0$x1>1024 | t0$x2>1048
 		get_symbs(t0$chr,bpStart,bpEnd, showLegend)
 	})
-
 	# set the default chr, Mbp to the location of the searched gene, clear input field 
 	observe({
 		updateSelectInput(session, "chr", selected=target()$chr)
 		updateNumericInput(session, "loc", value=target()$start)
 		updateTextInput(session, "geneSymb", value="")	
 	})
-
 	## legend panel
 	output$legendImage <- renderImage({
 		imgName="rotated_matrix_view.png"
