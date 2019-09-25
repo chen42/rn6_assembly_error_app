@@ -119,18 +119,18 @@ server <- function(input, output, session) {
 		dev.off()
 		## annotate the image with the gene of interest, 1052 is the width of the image
 		if (x1 > 0 & x1 < 1052) {
-			system(paste("convert ",  leftImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  leftImg, sep=""))
+			system(paste("convert ",  leftImg, " +repage -gravity west -font URW-Palladio-L-Bold  -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  leftImg, sep=""))
 		}
 		if (x2 > 0 & x2 < 1052) {
-			system(paste("convert ", leftImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" ",  leftImg, sep=""))
+			system(paste("convert ", leftImg, " +repage -gravity west -font URW-Palladio-L-Bold -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" ",  leftImg, sep=""))
 		}
 		if (x1 > 1052) {
 			x1 <- x1-1052
-			system(paste("convert ", rightImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  rightImg, sep=""))
+			system(paste("convert ", rightImg, " +repage -gravity west -font URW-Palladio-L-Bold -pointsize 80 -fill royalblue2 -annotate +", x1, "-300 \"[\" ",  rightImg, sep=""))
 		}
 		if (x2 > 1052) {
 			x2 <- x2-1052
-			system(paste("convert ", rightImg, " +repage -gravity west -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" ", rightImg, sep=""))
+			system(paste("convert ", rightImg, " +repage -gravity west -font URW-Palladio-L-Bold -pointsize 80 -fill royalblue2 -annotate +", x2, "-300 \"]\" ", rightImg, sep=""))
 		}
 		# append the svtrack
 		if (side=='left') {
